@@ -1,0 +1,13 @@
+#!/bin/bash
+for d in *; do
+        if [ -d "$d" ] ; then
+		if [ ! -d "$d/run" ] ; then
+			mkdir -- $d/run
+			echo $d
+			pushd "$d/run"
+			qsub $* ../*.pbs | tee submitted
+			popd &>/dev/null ;
+			sleep 1
+		fi;
+	fi;
+done
