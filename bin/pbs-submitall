@@ -1,0 +1,11 @@
+#!/bin/bash
+for f in $(find -name \*.pbs); do
+	if [ ! -f $f.submitted ] ; then
+		dirname $f ;
+		pushd $(dirname $f) &>/dev/null;
+		qsub $(basename $f) | tee $(basename $f).submitted
+		[ -s $(basename $f).submitted ] || rm -f $(basename $f).submitted
+		popd &>/dev/null ;
+		sleep 1
+	fi;
+done
