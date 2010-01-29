@@ -1,0 +1,37 @@
+#!/bin/bash
+if [ -z "$1" -o ! -d "$1" ] ; then
+	echo "usage: $0 <depdir> [pathpattern]"
+	exit 1
+fi
+depdir=`realpath $1`
+for f in $(find -type f -name \*.pbs); do
+	if [ ! -f $f.submitted ] ; then
+		subpath=""
+		if [ "$3" ] ; then
+			subpath=$(echo $f | sed -e "$3")
+		fi
+		depidfile="$depdir/$subpath/$f.submitted"
+		echo "$f: depidfile:$depidfile"
+		if [ -f $depidfile ] ; then
+			depid=`<$depidfile`
+			dirname $f ;
+			pushd $(dirname $f) &>/dev/null;
+			if qstat $depid &>/dev/null ; then
+				echo "Job $depid still running, submitting $f with dependency on it"
+				if [ -z "$DRYRUN" ] ; then
+					qsub $(basename $f) -W depend=afterok:$depid | tee $(basename $f).submitted
+				fi
+			else
+				echo "Job $depid not running, submitting $f without dependency on it"
+				if [ -z "$DRYRUN" ] ; then
+					qsub $(basename $f) | tee $(basename $f).submitted
+				fi
+			fi
+			[ -s $(basename $f).submitted ] || rm -f $(basename $f).submitted
+			popd &>/dev/null ;
+			sleep 1
+		else
+			echo "$depidfile does not exist"
+		fi;
+	fi;
+done
