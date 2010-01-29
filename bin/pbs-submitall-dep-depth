@@ -1,0 +1,22 @@
+#!/bin/bash
+if [ -z "$1" -o ! -d "$1" ] ; then
+	echo "usage: $0 <depdir>"
+	exit 1
+fi
+depdir=`realpath $1`
+for f in $(find -type f -name \*.pbs); do
+	if [ ! -f $f.submitted ] ; then
+		depidfile="$depdir/$f.submitted"
+		if [ -f $depidfile ] ; then
+			depid=`<$depidfile`
+			dirname $f ;
+			pushd $(dirname $f) &>/dev/null;
+			qsub $(basename $f) -W depend=afterok:$depid | tee $(basename $f).submitted
+			[ -s $(basename $f).submitted ] || rm -f $(basename $f).submitted
+			popd &>/dev/null ;
+			sleep 1
+		else
+			echo "$depidfile does not exist"
+		fi;
+	fi;
+done
