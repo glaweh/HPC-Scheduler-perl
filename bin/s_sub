@@ -1,0 +1,71 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Std;
+
+our ($opt_r,$opt_d,$opt_D,$opt_O,$opt_n);
+
+my $dryrun=0;
+
+sub submit_one {
+	my ($script,$options)=@_;
+	if (-s $script) {
+		my $jobidfile="$script.submitted";
+		if (! -s $jobidfile) {
+			$script=~/^(.*\/)([^\/]+)$/;
+			my ($dir,$script_base)=($1,$2);
+			chdir $dir;
+
+			if ($dryrun) {
+				print STDERR "dryrun: would run 'qsub $options $script_base\n'";
+				return(0);
+			}
+
+			chomp (my $resultstring=`qsub $options $script_base`);
+			my $qsubret=$?;
+
+			if ($resultstring=~/^Your job ([0-9]+) .*/) {
+				open(my $fh,">$jobidfile");
+				print $fh "$1\n";
+				close($fh);
+				print "Job $1 submitted\n";
+				return($qsubret);
+			} else {
+				print "Problem submitting job: $resultstring\n";
+				return(4200);
+			}
+		} else {
+			print "$script already submitted\n";
+			return(0);
+		}
+	} else {
+		print "Cannot run $script: no such file or directory!\n";
+		return(4201);
+	}
+}
+
+getopts("rd:D:O:n");
+die "No scriptname" if (@ARGV < 1);
+
+chomp(my $cwd=`pwd`);
+
+my @scripts;
+if ($opt_r) {
+	foreach my $tmpl (@ARGV) {
+		if ($tmpl =~ /\//) {
+			die "No '/' in filenames when recursing, please!\n";
+		} else {
+			open(my $find,"find $cwd -type f -name $tmpl|");
+			push @scripts,map { chomp; $_ } <$find>;
+			close($find);
+		}
+	}
+} else {
+	@scripts=map { "$cwd/$_" } @ARGV;
+}
+my $qsub_global_opts = (defined $opt_O ? $opt_O : '');
+
+foreach my $script (@scripts) {
+	print "script: $script\n";
+	submit_one($script,"$qsub_global_opts");
+}
