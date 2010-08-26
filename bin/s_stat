@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Std;
+use Data::Dumper;
+chomp (my $call_host=`hostname -f`);
+if ($call_host =~/(cluster|mpi-halle\.mpg\.de)$/) {
+	hstat_sge();
+}
+exit 0;
+sub hstat_sge {
+	my $qstat;
+	my $hot=0;
+	my $parsed;
+	my $nodes;
+	my $jobs;
+	open($qstat,"-|","qstat -u '*' -f");
+	my $nodename;
+	while (<$qstat>) {
+		chomp;
+		last if (/^\s*$/);
+		if (/^-*$/) {
+			$parsed = __LINE__-1;
+			$hot=1;
+			next;
+		}
+		if ($hot == 1) {
+			# host line:
+			# par_c_12@node085.cluster       P     0/12/12        12.18    lx24-amd64
+			if (/^(\S+)@([^\.]+)\.\S+\s*(\S+)\s*(\S+)\s*(\S+)\s*(\S+)\s*/) {
+				$parsed = __LINE__-1;
+				$nodename=$2;
+				$nodes->{$nodename}->{queue}=$1;
+				$nodes->{$nodename}->{state}=$3;
+				$nodes->{$nodename}->{slots}=$4;
+				$nodes->{$nodename}->{load}=$5;
+				$nodes->{$nodename}->{arch}=$6;
+				$hot=2;
+			} else {
+				warn "could not parse nodeline \"$_\"\n";
+				$hot=0;
+			}
+			next;
+		} elsif ($hot==2) {
+			my ($job_id,$job_prio,$job_name,$job_owner,$job_state,$job_date,$job_time,$job_slots);
+			($job_id,$job_prio,$job_name,$job_owner,$job_state,$job_date,$job_time,$job_slots)=split;
+			push @{$nodes->{$nodename}->{jobs}},$job_id;
+			$jobs->{$job_id}->{prio}=$job_prio;
+			$jobs->{$job_id}->{name}=$job_name;
+			$jobs->{$job_id}->{owner}=$job_owner;
+			$jobs->{$job_id}->{state}=$job_state;
+			$jobs->{$job_id}->{date}=$job_date;
+			$jobs->{$job_id}->{time}=$job_time;
+			$jobs->{$job_id}->{nodes}->{$nodename}=$job_slots;
+		}
+	}
+	close($qstat);
+	# print "=== Nodes: ===\n" . Dumper($nodes) . "\n";
+	# print "=== Jobs: ===\n" . Dumper($jobs) . "\n";
+	foreach my $job_id (sort keys %{$jobs}) {
+		next unless ($jobs->{$job_id}->{owner} eq $ENV{USER});
+		print "Job: $job_id, Owner: $jobs->{$job_id}->{owner}\n";
+		foreach my $node (sort keys %{$jobs->{$job_id}->{nodes}}) {
+			printf "    %8s %2d %5.2f",$node,$jobs->{$job_id}->{nodes}->{$node},$nodes->{$node}->{load};
+			foreach my $n_job (sort @{$nodes->{$node}->{jobs}}) {
+				next if ($n_job eq $job_id);
+				printf "   $n_job,$jobs->{$n_job}->{nodes}->{$node},$jobs->{$n_job}->{owner}";
+			}
+			print "\n";
+		}
+		print "\n";
+	}
+}
