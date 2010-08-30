@@ -3,6 +3,9 @@ use strict;
 use warnings;
 use Getopt::Std;
 use Data::Dumper;
+use XML::Simple;
+our ($opt_d);
+getopts('d');
 chomp (my $call_host=`hostname -f`);
 if ($call_host =~/(cluster|mpi-halle\.mpg\.de)$/) {
 	hstat_sge();
@@ -55,11 +58,76 @@ sub hstat_sge {
 		}
 	}
 	close($qstat);
+	my ($x,$jobinfo);
+	open($qstat,'-|','qstat -j ' . join(',',keys %{$jobs}) . ' -xml');
+	$x=XMLin($qstat,ForceArray => ['element'],KeyAttr => { element=> 'JB_job_number' });
+	$jobinfo=$x->{djob_info}->{element};
+	close($qstat);
 	# print "=== Nodes: ===\n" . Dumper($nodes) . "\n";
 	# print "=== Jobs: ===\n" . Dumper($jobs) . "\n";
+	my $time_now;
+	$time_now=time;
 	foreach my $job_id (sort keys %{$jobs}) {
 		next unless ($jobs->{$job_id}->{owner} eq $ENV{USER});
-		print "Job: $job_id, Owner: $jobs->{$job_id}->{owner}\n";
+		my $wall_time;
+		do {
+			use Time::Local;
+			my (@d,@t);
+			@d=split('/',$jobs->{$job_id}->{date});
+			@t=split(':',$jobs->{$job_id}->{time});
+			my $start_time=timelocal($t[2],$t[1],$t[0],$d[1],$d[0]-1,$d[2]);
+			my $runtime=($time_now-$start_time);
+			my ($run_s,$run_m,$run_h);
+			my $run_temp;
+			$run_s=$runtime % 60;
+			$run_temp=($runtime-$run_s) / 60;
+			$run_m=$run_temp % 60;
+			$run_temp-=$run_m;
+			$run_h=$run_temp / 60;
+			$wall_time="$run_h:$run_m:$run_s";
+		};
+		# check activity
+		my ($activity_time,$activity_file);
+		do {
+			my $newest_mtime=0;
+			my $jobdir=$jobinfo->{$job_id}->{JB_cwd};
+			if ($opt_d) {
+				my $find;
+				open ($find,'-|',"find $jobdir -type f -printf '%T@ %p\n'");
+				while (<$find>) {
+					chomp;
+					my ($mtime,$filename)=split;
+					if ($newest_mtime<$mtime) {
+						$newest_mtime=$mtime;
+						$activity_file=$filename;
+					}
+				}
+				close($find);
+				$newest_mtime=~ s/\.\d+//;
+			} else {
+				foreach my $filename (glob("$jobdir/*")) {
+					next unless (-f $filename);
+					my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+						$atime,$mtime,$ctime,$blksize,$blocks)
+						= stat($filename);
+					if ($newest_mtime<$mtime) {
+						$newest_mtime=$mtime;
+						$activity_file=$filename;
+					}
+				}
+			}
+			my $activitytime=($time_now-$newest_mtime);
+			my ($activity_s,$activity_m,$activity_h);
+			my $activity_temp;
+			$activity_s=$activitytime % 60;
+			$activity_temp=($activitytime-$activity_s) / 60;
+			$activity_m=$activity_temp % 60;
+			$activity_temp-=$activity_m;
+			$activity_h=$activity_temp / 60;
+			$activity_time="$activity_h:$activity_m:$activity_s";
+		};
+		print "Job: $job_id, Name: $jobinfo->{$job_id}->{JB_job_name}\n";
+		print "Wall: $wall_time, Act: $activity_time (File:'$activity_file')\n";
 		foreach my $node (sort keys %{$jobs->{$job_id}->{nodes}}) {
 			printf "    %8s %2d %5.2f",$node,$jobs->{$job_id}->{nodes}->{$node},$nodes->{$node}->{load};
 			foreach my $n_job (sort @{$nodes->{$node}->{jobs}}) {
