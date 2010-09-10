@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Getopt::Std;
 
-our ($opt_r,$opt_d,$opt_D,$opt_O,$opt_n);
+our ($opt_r,$opt_O,$opt_n);
 
 my $dryrun=0;
 
@@ -44,7 +44,7 @@ sub submit_one {
 	}
 }
 
-getopts("rd:D:O:n");
+getopts("rO:n");
 die "No scriptname" if (@ARGV < 1);
 
 chomp(my $cwd=`pwd`);
