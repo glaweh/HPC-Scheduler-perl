@@ -6,9 +6,14 @@ use Getopt::Std;
 our ($opt_r,$opt_O,$opt_n);
 
 my $dryrun=0;
+my $MAX_RECURSIONS=6;
 
 sub submit_one {
-	my ($script,$options)=@_;
+	my ($script,$options,$recursion_level)=@_;
+	if ($recursion_level > $MAX_RECURSIONS) {
+		print "too many recursions: $recursion_level > $MAX_RECURSIONS\n";
+		return 4223;
+	}
 	if (-s $script) {
 		my $jobidfile="$script.submitted";
 		if (! -s $jobidfile) {
@@ -68,5 +73,6 @@ my $qsub_global_opts = (defined $opt_O ? $opt_O : '');
 
 foreach my $script (@scripts) {
 	print "script: $script\n";
-	submit_one($script,"$qsub_global_opts");
+	submit_one($script,"$qsub_global_opts",0);
 }
+
