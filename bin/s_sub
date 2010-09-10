@@ -71,17 +71,17 @@ sub submit_one {
 				return(0);
 			}
 
-			chomp (my $resultstring=`$qsub_cmd`);
+			my $resultstring=`$qsub_cmd`;
 			my $qsubret=$?;
 
-			if ($resultstring=~/^Your job ([0-9]+) .*/) {
+			if (($qsubret == 0) and ($resultstring=~/^Your job ([0-9]+) .*/)) {
 				open(my $fh,">$jobidfile");
 				print $fh "$1\n";
 				close($fh);
 				print "Job $1 submitted\n";
 				return($qsubret);
 			} else {
-				print "Problem submitting job: $resultstring\n";
+				print 'Problem submitting job: ' . (defined $resultstring ? $resultstring : 'result empty') . "\n";
 				return(4200);
 			}
 		} else {
