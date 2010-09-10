@@ -88,7 +88,8 @@ sub hstat_sge {
 		};
 		# check activity
 		my ($activity_time,$activity_file);
-		do {
+		my $jobdir=(exists $jobinfo->{$job_id}->{JB_cwd} ? $jobinfo->{$job_id}->{JB_cwd} : 'UNSET');
+		if ( -d $jobdir ) {
 			my $newest_mtime=0;
 			my $jobdir=$jobinfo->{$job_id}->{JB_cwd};
 			if ($opt_d) {
@@ -127,7 +128,7 @@ sub hstat_sge {
 			$activity_time="$activity_h:$activity_m:$activity_s";
 		};
 		print "Job: $job_id, Name: $jobinfo->{$job_id}->{JB_job_name}\n";
-		print "Wall: $wall_time, Act: $activity_time (File:'$activity_file')\n";
+		print "Wall: $wall_time, Act: $activity_time (File: $activity_file)\n";
 		foreach my $node (sort keys %{$jobs->{$job_id}->{nodes}}) {
 			printf "    %8s %2d %5.2f",$node,$jobs->{$job_id}->{nodes}->{$node},$nodes->{$node}->{load};
 			foreach my $n_job (sort @{$nodes->{$node}->{jobs}}) {
