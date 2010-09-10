@@ -67,7 +67,7 @@ sub hstat_sge {
 	# print "=== Jobs: ===\n" . Dumper($jobs) . "\n";
 	my $time_now;
 	$time_now=time;
-	foreach my $job_id (sort keys %{$jobs}) {
+	foreach my $job_id (sort { $a <=> $b } keys %{$jobs}) {
 		next unless ($jobs->{$job_id}->{owner} eq $ENV{USER});
 		my $wall_time;
 		do {
