@@ -21,12 +21,53 @@ sub submit_one {
 			my ($dir,$script_base)=($1,$2);
 			chdir $dir;
 
+			my $dep_option='';
+			my $dep_glob_file="$script_base.depends";
+			if (-s $dep_glob_file) {
+				my $dep_glob_fh;
+				my @dep_files;
+				my @dep_ids;
+				open($dep_glob_fh,$dep_glob_file);
+				while (<$dep_glob_fh>) {
+					chomp;
+					s/#.*//;
+					next if (/^\s*$/);
+					push @dep_files,glob;
+				}
+				close($dep_glob_fh);
+				if (@dep_files < 1) {
+					print "not submitting: $script_base.depends exists, but no matching files found";
+					return 4242;
+				}
+				foreach my $dep (@dep_files) {
+					next if (-f "$dep.completed");
+					my $dep_id;
+					if (! -s "$dep.submitted") {
+						my $retval=submit_one($dep,$options,$recursion_level+1);
+						$dep_id=(1000000-$recursion_level) if ($dryrun and $retval==0);
+					}
+					if ((! defined $dep_id) and (-s "$dep.submitted")) {
+						my $dep_fh;
+						open($dep_fh,"$dep.submitted");
+						$_=<$dep_fh>;
+						$dep_id=$_ unless (/^\s*$/);
+						chomp;
+						close($dep_fh);
+					}
+					push @dep_ids,$dep_id if (defined $dep_id);
+				}
+				if (@dep_ids) {
+					$dep_option='-hold_jid ' . join(',',@dep_ids);
+				}
+			}
+
+			my $qsub_cmd="qsub $options $dep_option $script_base";
 			if ($dryrun) {
-				print STDERR "dryrun: would run 'qsub $options $script_base\n'";
+				print STDERR "dryrun: would run '$qsub_cmd'\n";
 				return(0);
 			}
 
-			chomp (my $resultstring=`qsub $options $script_base`);
+			chomp (my $resultstring=`$qsub_cmd`);
 			my $qsubret=$?;
 
 			if ($resultstring=~/^Your job ([0-9]+) .*/) {
