@@ -46,6 +46,7 @@ sub submit_one {
 
 getopts("rO:n");
 die "No scriptname" if (@ARGV < 1);
+$dryrun=1 if (defined $opt_n);
 
 chomp(my $cwd=`pwd`);
 
