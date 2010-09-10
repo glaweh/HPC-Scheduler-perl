@@ -45,6 +45,10 @@ sub submit_one {
 					if (! -s "$dep.submitted") {
 						my $retval=submit_one($dep,$options,$recursion_level+1);
 						$dep_id=(1000000-$recursion_level) if ($dryrun and $retval==0);
+						if ($retval != 0) {
+							print "error submitting dependency job\n";
+							return 4243;
+						}
 					}
 					if ((! defined $dep_id) and (-s "$dep.submitted")) {
 						my $dep_fh;
