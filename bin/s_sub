@@ -36,7 +36,7 @@ sub submit_one {
 				}
 				close($dep_glob_fh);
 				if (@dep_files < 1) {
-					print "not submitting: $script_base.depends exists, but no matching files found";
+					print "not submitting: $script_base.depends exists, but no matching files found\n";
 					return 4242;
 				}
 				foreach my $dep (@dep_files) {
