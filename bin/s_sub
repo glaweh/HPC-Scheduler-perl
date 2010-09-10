@@ -6,7 +6,7 @@ use Getopt::Std;
 our ($opt_r,$opt_O,$opt_n);
 
 my $dryrun=0;
-my $MAX_RECURSIONS=6;
+my $MAX_RECURSIONS=20;
 
 sub submit_one {
 	my ($script,$options,$recursion_level)=@_;
