@@ -59,8 +59,8 @@ sub submit_one {
 						my $dep_fh;
 						open($dep_fh,"$dep.submitted");
 						$_=<$dep_fh>;
-						$dep_id=$_ unless (/^\s*$/);
 						chomp;
+						$dep_id=$_ unless (/^\s*$/);
 						close($dep_fh);
 					}
 					push @dep_ids,$dep_id if (defined $dep_id);
