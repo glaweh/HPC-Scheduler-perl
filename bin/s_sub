@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Getopt::Std;
+use Cwd;
 
 our ($opt_r,$opt_O,$opt_n);
 
@@ -19,6 +20,7 @@ sub submit_one {
 		if (! -s $jobidfile) {
 			$script=~/^(.*\/)([^\/]+)$/;
 			my ($dir,$script_base)=($1,$2);
+			my $olddir=getcwd;
 			chdir $dir;
 
 			my $dep_option='';
@@ -37,6 +39,7 @@ sub submit_one {
 				close($dep_glob_fh);
 				if (@dep_files < 1) {
 					print "not submitting: $script_base.depends exists, but no matching files found\n";
+					chdir $olddir;
 					return 4242;
 				}
 				foreach my $dep (@dep_files) {
@@ -47,6 +50,7 @@ sub submit_one {
 						$dep_id=(1000000-$recursion_level) if ($dryrun and $retval==0);
 						if ($retval != 0) {
 							print "error submitting dependency job\n";
+							chdir $olddir;
 							return 4243;
 						}
 					}
@@ -68,6 +72,7 @@ sub submit_one {
 			my $qsub_cmd="qsub $options $dep_option $script_base";
 			if ($dryrun) {
 				print STDERR "dryrun: would run '$qsub_cmd'\n";
+				chdir $olddir;
 				return(0);
 			}
 
@@ -79,11 +84,14 @@ sub submit_one {
 				print $fh "$1\n";
 				close($fh);
 				print "Job $1 submitted\n";
+				chdir $olddir;
 				return($qsubret);
 			} else {
 				print 'Problem submitting job: ' . (defined $resultstring ? $resultstring : 'result empty') . "\n";
+				chdir $olddir;
 				return(4200);
 			}
+			chdir $olddir;
 		} else {
 			print "$script already submitted\n";
 			return(0);
