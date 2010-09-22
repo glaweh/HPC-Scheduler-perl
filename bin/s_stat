@@ -60,8 +60,12 @@ sub hstat_sge {
 	close($qstat);
 	my ($x,$jobinfo);
 	open($qstat,'-|','qstat -j ' . join(',',keys %{$jobs}) . ' -xml');
-	$x=XMLin($qstat,ForceArray => ['element'],KeyAttr => { element=> 'JB_job_number' });
-	$jobinfo=$x->{djob_info}->{element};
+	$x=XMLin($qstat,ForceArray => ['element'],KeyAttr => { element=> 'JB_job_number', qmaster_response => 'JB_job_number' });
+	if (exists $x->{djob_info}->{element}) {
+		$jobinfo=$x->{djob_info}->{element};
+	} elsif (exists $x->{djob_info}->{qmaster_response}) {
+		$jobinfo=$x->{djob_info}->{qmaster_response};
+	}
 	close($qstat);
 	# print "=== Nodes: ===\n" . Dumper($nodes) . "\n";
 	# print "=== Jobs: ===\n" . Dumper($jobs) . "\n";
