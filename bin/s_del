@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use XML::Simple;
+use Getopt::Std;
+use PDL::IO::Dumper;
+
+our ($opt_n);
+my $dryrun;
+getopts('n');
+$dryrun=(defined $opt_n ? 1 : 0);
+
+sub delete_job {
+	my $job_id=shift;
+	my $recursion_level=shift;
+	my ($qstat,$x,$jobinfo);
+	my $qstat_fh;
+	open($qstat_fh,'-|','qstat -j ' . $job_id . ' -xml');
+	$qstat=join('',<$qstat_fh>);
+	close($qstat_fh);
+	if ($qstat =~ /<unknown_jobs/) {
+		print "job $job_id not in queue\n";
+		return(1);
+	}
+	$x=XMLin($qstat,
+		ForceArray => ['element', 'JRE_job_number', 'ulong_sublist'],
+		KeyAttr => { element=> 'JB_job_number', qmaster_response => 'JB_job_number' });
+	if (exists $x->{djob_info}->{element}) {
+		$jobinfo=$x->{djob_info}->{element}->{$job_id};
+	} elsif (exists $x->{djob_info}->{qmaster_response}) {
+		$jobinfo=$x->{djob_info}->{qmaster_response}->{$job_id};
+	} else {
+		print STDERR "job $job_id unknown\n";
+		return 1;
+	}
+	fdump($jobinfo,"jb-$job_id.pdld");
+	if (exists $jobinfo->{JB_jid_successor_list}) {
+		my $successors=$jobinfo->{JB_jid_successor_list};
+		foreach my $sublist (@{$successors->{ulong_sublist}}) {
+			foreach my $successor (@{$sublist->{JRE_job_number}}) {
+				delete_job($successor,$recursion_level+1);
+			}
+		}
+	}
+	printf STDERR "%03d %6d %s/%s\n",$recursion_level,$job_id,$jobinfo->{JB_cwd},$jobinfo->{JB_script_file};
+	my $qdel;
+	$qdel=`qdel $job_id` unless ($dryrun);
+	sleep 2;
+}
+
+foreach my $job_id (@ARGV) {
+	delete_job($job_id,0);
+}
