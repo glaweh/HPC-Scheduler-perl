@@ -1,0 +1,19 @@
+#!/bin/bash
+outf=`mktemp`
+errf=`mktemp`
+while true ; do
+	qstat "$@" >$outf 2>$errf
+	retval=$?
+	echo "ret: $retval"
+	echo "---- stderr ----" >&2
+	cat $errf >&2
+        echo "---- stdout ----"
+	cat $outf
+	if [ $retval -eq 0 ] ; then
+		break
+	else
+		sleep 30
+	fi
+done
+rm -f $outf $errf
+exit $retval
