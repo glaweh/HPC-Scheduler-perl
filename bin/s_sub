@@ -30,15 +30,17 @@ sub submit_one {
 				my $dep_glob_fh;
 				my @dep_files;
 				my @dep_ids;
+				my $n_patterns=0;
 				open($dep_glob_fh,$dep_glob_file);
 				while (<$dep_glob_fh>) {
 					chomp;
 					s/#.*//;
 					next if (/^\s*$/);
+					$n_patterns++;
 					push @dep_files,glob;
 				}
 				close($dep_glob_fh);
-				if (@dep_files < 1) {
+				if ($n_patterns and (@dep_files < 1)) {
 					print "not submitting: $script_base.depends exists, but no matching files found\n";
 					chdir $olddir;
 					return 4242;
