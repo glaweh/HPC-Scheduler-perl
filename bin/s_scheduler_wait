@@ -1,0 +1,5 @@
+#!/bin/bash
+while ! netcat -z t2f.mpi-halle.mpg.de 6444 ; do
+	echo fail ;
+	sleep 10 ;
+done ;
