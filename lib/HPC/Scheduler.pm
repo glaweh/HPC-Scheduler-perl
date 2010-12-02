@@ -1,6 +1,7 @@
 package HPC::Scheduler;
 use strict;
 use warnings;
+use Carp;
 our @job_states=('running','queued','error','not_queued','unknown');
 sub new {
 	my $class=shift;
@@ -14,7 +15,7 @@ sub new {
 		}
 	}
 	bless($self,$class);
-	$self->update();
+	croak "cannot update job list" unless $self->update();
 	return($self);
 }
 sub update {
