@@ -117,7 +117,7 @@ if ($opt_r) {
 		if ($tmpl =~ /\//) {
 			die "No '/' in filenames when recursing, please!\n";
 		} else {
-			open(my $find,"find $cwd -type f -name $tmpl|");
+			open(my $find,"find $cwd -type f -name $tmpl -! -path \*/trash/\* -! -path \*/backup/\*|");
 			push @scripts,map { chomp; $_ } <$find>;
 			close($find);
 		}
