@@ -87,6 +87,10 @@ sub submit_one {
 				print $fh "$1\n";
 				close($fh);
 				print "Job $1 submitted\n";
+				# create backref, as the script name is usually not available at runtime
+				open($fh,">$1.script");
+				print $fh "$script_base\n";
+				close($fh);
 				chdir $olddir;
 				return($qsubret);
 			} else {
