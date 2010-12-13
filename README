@@ -1,0 +1,49 @@
+HPC-Scheduler-perl is a perl module abstracting the low-level interface
+to batch job schedulers on HPC clusters.
+A collection of end-user tools for interaction with batch job schedulers
+is included in the distribution.
+
+Up until now, a low-level interface for Sun/Oracle Grid Engine exists.
+
+1) Perl module for interaction with the cluster/batch scheduler
+===============================================================
+ - checking for the queueing system's opinion about jobs
+ - there's a Queueing-system neutral abstract class, and an
+   implementation for Sun/Oracle Grid Engine
+
+2) Utilities interacting with cluster/batch schedulers
+======================================================
+These utilities are intended as a more comfortable way to interact with
+cluster schedulers, adding things such as automatic batch job dependency
+management.
+They provide additional metadata for the common job environment, such as
+original job script names, therefore it is highly recommended to use them
+for submitting/deleting/checking job_env based batch-jobs.
+
+s_sub
+--------
+  submits jobs tracking dependencies
+s_del
+-------
+  recursively deletes jobs
+s_qstat
+---------
+  brute-forces qstat up until there is an answer
+s_scheduler_wait
+------------------
+ waits for availability of the GridEngine master
+s_stat
+--------
+  checks status of jobs
+pbs-submitall
+-------------
+  submits all jobs in all subdirectories to PBS
+pbs-submitall-dep
+-----------------
+  submits all jobs with dep-hold on jobs processed by sed regex
+pbs-submitall-dep-depth
+-----------------------
+  submits jobs in subdirs with dependency-hold on jobs in an analog dir structure
+pbs-submitall-run
+-----------------
+  submits a bunch of PBS jobs with rundirs
