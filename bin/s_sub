@@ -22,9 +22,10 @@ use Getopt::Long;
 use Cwd;
 use File::Spec;
 
-my ($opt_r,$opt_O);
+my ($opt_O);
 
 my $dryrun=0;
+my $recurse_dir='';
 my $MAX_RECURSIONS=20;
 
 sub submit_one {
@@ -127,18 +128,17 @@ sub submit_one {
 	}
 }
 
-GetOptions('recursive|r' => \$opt_r, 'qsub_opts|O=s' => \$opt_O, 'dryrun|n' => \$dryrun);
+GetOptions('recurse_dir|D=s' => \$recurse_dir, 'qsub_opts|O=s' => \$opt_O, 'dryrun|n' => \$dryrun);
 die "No scriptname" if (@ARGV < 1);
 
-my $cwd=getcwd;
-
 my @scripts;
-if ($opt_r) {
+if ($recurse_dir) {
 	foreach my $tmpl (@ARGV) {
+		die "directory '$recurse_dir' does not exist" unless (-d $recurse_dir);
 		if ($tmpl =~ /\//) {
 			die "No '/' in filenames when recursing, please!\n";
 		} else {
-			open(my $find,"find $cwd -type f -name $tmpl -! -path \*/trash/\* -! -path \*/backup/\*|");
+			open(my $find,"find $recurse_dir -type f -name $tmpl -! -path \*/trash/\* -! -path \*/backup/\*|");
 			push @scripts,map { chomp; $_ } <$find>;
 			close($find);
 		}
