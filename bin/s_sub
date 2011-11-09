@@ -22,10 +22,9 @@ use Getopt::Long;
 use Cwd;
 use File::Spec;
 
-my ($opt_O);
-
 my $dryrun=0;
 my $recurse_dir='';
+my $qsub_global_opts = '';
 my $MAX_RECURSIONS=20;
 
 sub submit_one {
@@ -128,7 +127,7 @@ sub submit_one {
 	}
 }
 
-GetOptions('recurse_dir|D=s' => \$recurse_dir, 'qsub_opts|O=s' => \$opt_O, 'dryrun|n' => \$dryrun);
+GetOptions('recurse_dir|D=s' => \$recurse_dir, 'qsub_opts|O=s' => \$qsub_global_opts, 'dryrun|n' => \$dryrun);
 die "No scriptname" if (@ARGV < 1);
 
 my @scripts;
@@ -147,7 +146,6 @@ if ($recurse_dir) {
 	@scripts=@ARGV;
 }
 @scripts=map { File::Spec->rel2abs($_) } @scripts;
-my $qsub_global_opts = (defined $opt_O ? $opt_O : '');
 
 foreach my $script (@scripts) {
 	print "script: $script\n";
