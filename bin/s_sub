@@ -18,10 +18,10 @@
 
 use strict;
 use warnings;
-use Getopt::Std;
+use Getopt::Long;
 use Cwd;
 
-our ($opt_r,$opt_O,$opt_n);
+my ($opt_r,$opt_O,$opt_n);
 
 my $dryrun=0;
 my $MAX_RECURSIONS=20;
@@ -126,7 +126,7 @@ sub submit_one {
 	}
 }
 
-getopts("rO:n");
+GetOptions('recursive|r' => \$opt_r, 'qsub_opts|O=s' => \$opt_O, 'dryrun|n' => \$opt_n);
 die "No scriptname" if (@ARGV < 1);
 $dryrun=1 if (defined $opt_n);
 
