@@ -20,6 +20,7 @@ use strict;
 use warnings;
 use Getopt::Long;
 use Cwd;
+use File::Spec;
 
 my ($opt_r,$opt_O);
 
@@ -143,8 +144,9 @@ if ($opt_r) {
 		}
 	}
 } else {
-	@scripts=map { "$cwd/$_" } @ARGV;
+	@scripts=@ARGV;
 }
+@scripts=map { File::Spec->rel2abs($_) } @scripts;
 my $qsub_global_opts = (defined $opt_O ? $opt_O : '');
 
 foreach my $script (@scripts) {
