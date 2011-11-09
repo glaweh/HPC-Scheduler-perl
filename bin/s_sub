@@ -152,3 +152,127 @@ foreach my $script (@scripts) {
 	submit_one($script,$qsub_global_opts,0);
 }
 
+__END__
+
+=head1 NAME
+
+s_sub - Wrapper for qsub for mass submits with dependency handling
+
+=head1 SYNOPSIS
+
+s_sub [ options ] <jobscript> [jobscript ...]
+
+ Options:
+   --recurse_dir | -D <path>   find <jobscript> below <path>
+   --dryrun      | -n          Perform every step except the final call to qsub
+   --qsub_opts   | -O <opts>   Add <opts> to every qsub call
+   --help                      brief help message
+   --man                       full documentation
+
+=head1 DESCRIPTION
+
+C<s_sub> is a convenience wrapper around C<qsub>, a utility to submit batch
+jobs to a HPC Cluster queueing system.
+
+When calling C<qsub>, C<s_sub> changes into the directory containing
+F<< <jobscript> >>, in order to make Sun Grid Engines '-cwd' option perform as
+expected.
+
+For each of the job scripts submitted, the corresponding job identifier is
+written to a file called F<< <jobscript>.submitted >> in the same directory as
+F<< <jobscript> >>. If this file is already present, the job is not submitted
+again.
+
+Before submitting F<< <jobscript> >>, a file called F<< <jobscript>.depends >> is
+checked for other jobs this particular job depends on. All of these jobs are
+submitted in the same way as F<< <jobscript> >>, and their job identifiers are added
+to C<qsub>'s '-hold_jid' option, allowing F<< <jobscript> >> only to start after
+their completion.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--recurse_dir> <path>, B<-D> <path>
+
+Use C<find> to find all scripts matching <jobscript> below <path>. In this
+case, <jobscript> may also be a pattern understood by C<find>.
+
+=item B<--qsub_opts> <options>, B<-O> <options>
+
+Call C<qsub> with <options>, added to the automatically generated ones.
+
+=item B<--dryrun>, B<-n>
+
+Enable dryrun mode, in order to see which steps would be performed without
+actually calling C<qsub>. This is especially useful to check job
+interdependencies.
+
+=back
+
+=head1 FILES
+
+=over 8
+
+=item F<jobscript.submitted> (written by C<s_sub>)
+
+File containing the job identifier after a successful submission. Further 
+attempts to submit <jobscript> are ignored if this file exists.
+
+=item F<jobscript.depends> (optional, read by C<s_sub>)
+
+File containing the paths of all other jobscripts this particular job
+depends on. Shell globs like '*' and '?' are allowed in the file names.
+
+=item F<jobscript.completed> (read by C<s_sub> when submitting dependent jobs)
+
+If this file exists for a jobscript the submitted job depends on, its ID is
+I<not> added to the list of jobs the depend on.
+Should be written by all jobscripts after successful completion.
+
+=back
+
+=head1 EXAMPLES
+
+=head2 Submit all jobs called job.sge found below /scratch/
+
+C<s_sub -D /scratch job.sge>
+
+=head2 Submit all jobs matching '*.sge' found below /scratch
+
+C<s_sub -D /scratch '*.sge'>
+
+Note that one usually needs to put quotes around a pattern in order
+to protect it from the shell you are using.
+
+=head2 Three jobs, the third can only run after the first two finish
+
+=head3 Files:
+
+=over 8
+
+=item F</scratch/job1/job.sge>
+
+=item F</scratch/job2/job.sge>
+
+=item F</scratch/job3/job.sge>
+
+=item F</scratch/job3/job.sge.depends> contains:
+
+ ../job1/job.sge
+ ../job2/job.sge
+
+=back
+
+=head3 Submission
+
+C<s_sub /scratch/job3/job.sge>
+
+Will submit all 3 jobs in the I<right> order, allowing F</scratch/job3/job.sge>
+to start only after the other two are done.
+
+=head1 AUTHOR
+
+Henning Glawe <glawe@mpi-halle.mpg.de>
+
+=cut
