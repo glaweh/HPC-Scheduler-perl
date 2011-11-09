@@ -149,6 +149,6 @@ if ($recurse_dir) {
 
 foreach my $script (@scripts) {
 	print "script: $script\n";
-	submit_one($script,"$qsub_global_opts",0);
+	submit_one($script,$qsub_global_opts,0);
 }
 
