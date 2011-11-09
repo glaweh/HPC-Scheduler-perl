@@ -19,6 +19,7 @@
 use strict;
 use warnings;
 use Getopt::Long;
+use Pod::Usage;
 use Cwd;
 use File::Spec;
 
@@ -127,8 +128,17 @@ sub submit_one {
 	}
 }
 
-GetOptions('recurse_dir|D=s' => \$recurse_dir, 'qsub_opts|O=s' => \$qsub_global_opts, 'dryrun|n' => \$dryrun);
-die "No scriptname" if (@ARGV < 1);
+my $man  = 0;
+my $help = 0;
+GetOptions('recurse_dir|D=s' => \$recurse_dir,
+	'qsub_opts|O=s' => \$qsub_global_opts,
+	'dryrun|n' => \$dryrun,
+	'help' => \$help,
+	'man'  => \$man,
+) or pod2usage(2);
+pod2usage(1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+pod2usage(2) if (@ARGV < 1);
 
 my @scripts;
 if ($recurse_dir) {
